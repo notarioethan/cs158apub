@@ -28,6 +28,7 @@ class Message:
         sender_uuid = uuid.UUID(data['uuid'])
         return cls(sender_uuid=sender_uuid, flag=data['flag'])
     
+state = 0
 
 #parse config.txt
 config_file = open("config.txt", "r")
@@ -37,11 +38,11 @@ s_line = config_file.readline().strip() #IP address as server
 config_file.close()
 
 #socket stuff
-sl_split = s_line.split()
+sl_split = s_line.split(",")
 #C_HOST = cl_split[0] # server address, use when client
 #^ not used as server
 S_HOST = sl_split[0] # client address, use when server
-PORT = sl_split[1] # port number; client and server should match (and do in config.txt)
+PORT = int(sl_split[1]) # port number; client and server should match (and do in config.txt)
 BUFFER_SIZE = 1024
 
 #multithreading here; 1 process to run server side, 1 to run client side
@@ -71,7 +72,15 @@ def handle_client(conn, addr):
                 # Empty bytes means the client closed the connection.
                 print(f"[{thread_name}] Client {addr} disconnected.")
                 break
-            print(f"Received: uuid={data.uuid}, flag={data.flag}, ")
+
+            comp = "less"
+            if data.uuid > uuid.uuid4():
+                comp = "greater"
+            elif data.uuid == uuid.uuid4():
+                comp = "same"
+            print(f"Received: uuid={data.uuid}, flag={data.flag}, {comp}, {state}")
+            with open("log1.txt", "a") as f:
+                        f.write(f"Received: uuid={data.uuid}, flag={data.flag}, {comp}, {state}")
 
             # sendall() echoes every byte back, retrying internally if needed.
             conn.sendall(data)

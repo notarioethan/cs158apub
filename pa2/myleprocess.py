@@ -39,11 +39,11 @@ c_line = config_file.readline().strip() #info exchanged w/ other student as clie
 config_file.close()
 
 #socket stuff
-cl_split = c_line.split()
+cl_split = c_line.split(",")
 C_HOST = cl_split[0] # server address, use when client
 #S_HOST = s_line.split()[0] # client address, use when server
 #^ not used as client
-PORT = cl_split[1] # port number; client and server should match (and do in config.txt)
+PORT = int(cl_split[1]) # port number; client and server should match (and do in config.txt)
 BUFFER_SIZE = 1024
 
 
