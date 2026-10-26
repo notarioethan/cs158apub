@@ -1,0 +1,37 @@
+ID:a2d4a9e6-f0da-4577-900a-ea045e53eb6b
+
+ID:305b2814-8384-4945-959d-0b3dcfadb9cd
+
+ID:cab8df2f-8358-453d-9646-9316b0dc88cc
+Sent: cab8df2f-8358-453d-9646-9316b0dc88cc, 0
+Recieved: 334734d6-6b9b-40b2-bbbc-3acce4b94326, Flag=0, less, 0
+	Ignore Message
+Recieved: b9689e64-5494-4516-83e9-32a5afad093f, Flag=0, less, 0
+	Ignore Message
+
+ID:c483d102-f5b0-4fce-a60c-af3e40f24c30
+Sent: c483d102-f5b0-4fce-a60c-af3e40f24c30, 0
+Recieved: ba938342-ba60-4f7a-9f42-7cc7935fec3d, Flag=0, less, 0
+	Ignore Message
+Sent: cdab1c35-f786-4c25-ba72-cf665b380c68, 0
+Recieved: cdab1c35-f786-4c25-ba72-cf665b380c68, Flag=0, more, 0
+
+ID:a5bee083-c25b-40d0-b61f-8510a753673a
+Sent: a5bee083-c25b-40d0-b61f-8510a753673a, 0
+Recieved: 949c8d1e-ecee-4b7d-a559-586443fb1e76, Flag=0, less, 0
+	Ignore Message
+Sent: c9c81431-c8b3-41c9-80ae-ca7f5caf95b5, 0
+Recieved: c9c81431-c8b3-41c9-80ae-ca7f5caf95b5, Flag=0, more, 0
+Sent: ff1cf719-5f6e-4333-a9be-202a442a20ed, 0
+Recieved: ff1cf719-5f6e-4333-a9be-202a442a20ed, Flag=0, more, 0
+
+ID:6e7cf3fd-3832-485d-ac9f-23e6dd27a8f8
+Sent: 6e7cf3fd-3832-485d-ac9f-23e6dd27a8f8, 0
+Sent: a770517e-09fb-433b-9f91-b0e8d9451bcd, 0
+Recieved: a770517e-09fb-433b-9f91-b0e8d9451bcd, Flag=0, more, 0
+Sent: f0d424d6-cab9-4bbd-b60b-7db56cede1af, 0
+Recieved: f0d424d6-cab9-4bbd-b60b-7db56cede1af, Flag=0, more, 0
+Sent: f0d424d6-cab9-4bbd-b60b-7db56cede1af, 1
+Recieved: f0d424d6-cab9-4bbd-b60b-7db56cede1af, Flag=1, more, 0
+Leader is decided to:f0d424d6-cab9-4bbd-b60b-7db56cede1af
+

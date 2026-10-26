@@ -1,81 +1,130 @@
-import uuid
-import json
-import socket
-import threading
-import time
+#not my code; just for use to correct my own
+import uuid, socket, threading, time, json
+BUFFER_SIZE = 1024 #size of data to send
+myUUID = uuid.uuid4() #create my process's uuid
+leader_id: uuid.UUID
+clientSocket = None
+serverSocket = None
+conn = None
+leaderFound = 0 #If the leader is found flag
+amLeader = 0 #If this process is the leader
+logfile = "log1.txt" #File name for the log
+config = "config.txt" #File name for the config
 
+#The message format
 class Message:
-    def __init__(self, sender_uuid: uuid.UUID, flag: int = 0):
-        self.uuid = sender_uuid
-        self.flag = flag
+    def __init__(self, sender_uuid: uuid.UUID, flag: int):
+        self.uuid = sender_uuid #The id of who sent the message
+        self.flag = flag #If the leader has been elected or not. Default not
 
-    def to_json(self) -> str:
-        """Serializes the Message instance into a JSON string."""
-        # Custom encoder handling uuid.UUID objects by converting them to strings
-        class MessageEncoder(json.JSONEncoder):
-            def default(self, obj):
-                if isinstance(obj, uuid.UUID):
-                    return str(obj)
-                return super().default(obj)
-        
-        return json.dumps(self.__dict__, cls=MessageEncoder)
+#method to thread for the server
+def serverListen():
+    global serverSocket, conn
+    #read the IP and port from the config file. Should be first line
+    with open(config, "r") as file:
+        line = file.readline().strip()
+    ip, port = line.split(",")
+    serverAddress = (ip, int(port))
+    serverSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM) #Create the socket
+    serverSocket.bind(serverAddress) #Claim the IP and Port from the config file (should be first line)
+    serverSocket.listen(1) #listen for client connections
+    conn, addr = serverSocket.accept() #accept the client connection and store the socket
 
-    @classmethod
-    def from_json(cls, json_str: str):
-        """Deserializes a JSON string back into a Message instance."""
-        data = json.loads(json_str)
-        # Convert the string representation back into a uuid.UUID object
-        sender_uuid = uuid.UUID(data['uuid'])
-        return cls(sender_uuid=sender_uuid, flag=data['flag'])
-    
-#leader_id =
-state = 0
-
-#parse config.txt
-config_file = open("config.txt", "r")
-s_line = config_file.readline().strip() #IP address as server
-#not used as client; just to get to next line
-c_line = config_file.readline().strip() #info exchanged w/ other student as client
-config_file.close()
-
-#socket stuff
-cl_split = c_line.split(",")
-C_HOST = cl_split[0] # server address, use when client
-#S_HOST = s_line.split()[0] # client address, use when server
-#^ not used as client
-PORT = int(cl_split[1]) # port number; client and server should match (and do in config.txt)
-BUFFER_SIZE = 1024
-
-
-#client TCP socket
-with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as c_sock:
-    c_sock.connect((C_HOST, PORT)) #connect client w/ server
-    #below is messaging from example code
-    print(f"[TCP Client] Connected to {C_HOST}:{PORT}")
-    #print("[TCP Client] Type a message and press Enter. Type 'quit' to exit.\n")
-    #not user input for this
-    
+#method to thread for the client
+def clientConnect():
+    global clientSocket
+    #read the IP and port from the config file. Should be second line
+    with open(config, "r") as file:
+        file.readline() #Skip first line
+        line = file.readline().strip()
+    ip, port = line.split(",")
+    serverAddress = (ip, int(port))
+    clientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM) #Create client socket
+    #Repeatedly try to connect just in case server isn't up yet
     while True:
-        node_uuid = uuid.uuid4()
-        message = Message(node_uuid, 0)
-
-    
-        if message.lower() == "quit":
-            print("[TCP Client] Closing connection.")
+        try:
+            clientSocket.connect(serverAddress)
             break
-    
-        if not message:
-            continue
-        
-        print(f"Sent: uuid={message.uuid}, flag={message.flag}")    
-        # encode() encodes the string to bytes, and sendall() sends it to the server.
-        c_sock.sendall(message.to_json)
-        with open("log1.txt", "a") as f:
-            f.write(f"Sent: uuid={message.uuid}, flag={message.flag}")
-    
-        # recv() BLOCKS until the server sends data back.
-        response = c_sock.recv(BUFFER_SIZE)
-    
-        print(f"Echo: {response.decode()}\n")
+        except ConnectionRefusedError:
+            print("Server not ready. Trying again...")
+            time.sleep(1)
 
-#log messages
+#Helper method to send a message from a given socket
+def forward(sock, uuidToSend, leaderFlag):
+    #send the message in json format
+    message = Message(uuidToSend, leaderFlag)
+    messageToSend = json.dumps({
+        "uuid": str(message.uuid),
+        "flag": message.flag
+    })
+    sock.send(messageToSend.encode())
+    #log that we have sent a message
+    with open(logfile, "a") as log:
+        log.write(f"Sent: {message.uuid}, {message.flag}\n")
+
+#write this process's UUID to the log
+with open(logfile, "a") as log:
+    log.write(f"ID:{myUUID}\n")
+
+#start a new thread for the server to listen for clients
+serverThread = threading.Thread(target = serverListen)
+serverThread.start()
+
+#start a new thread for the client to try to connect
+clientThread = threading.Thread(target = clientConnect)
+clientThread.start()
+
+#Wait for sockets to find connections before continuing
+clientThread.join()
+serverThread.join()
+
+#send the first message of just this process's uuid and leader found (default 0)
+forward(clientSocket, myUUID, leaderFound)
+
+#Repeatedly accept and forward messages while the leader isn't found
+while(not leaderFound):
+    #recieve message stream until }
+    incomingMessage = ""
+    while "}" not in incomingMessage:
+        chunk = conn.recv(BUFFER_SIZE) #recieve chunk of message
+        if not chunk: #Stop if we recieve empty chunk
+            break
+        incomingMessage += chunk.decode()
+    messageReceived = json.loads(incomingMessage)
+    receivedUUID = messageReceived["uuid"]
+    receivedFlag = messageReceived["flag"]
+
+    #If the incoming message found the leader, set the leader id
+    if receivedFlag == 1:
+        leaderFound = 1
+        leader_id = uuid.UUID(receivedUUID)
+
+    #Log that we recieved a message with the uuid comparison then forward if needed
+    with open(logfile, "a") as log:
+        log.write(f"Recieved: {receivedUUID }, Flag={receivedFlag}, ")
+        #Ignore a message if the uuid is less than our's. Ends the ring
+        if(myUUID > uuid.UUID(receivedUUID)):
+            log.write("less, ")
+            #Log our leader found flag
+            log.write(f"{amLeader}\n")
+            log.write("\tIgnore Message\n")
+        #Forward the message if it has a greater uuid than our's
+        elif(myUUID < uuid.UUID(receivedUUID)):
+            log.write("more, ")
+            #Log our leader found flag
+            log.write(f"{amLeader}\n")
+            forward(clientSocket, uuid.UUID(receivedUUID), receivedFlag)
+        #If the message id is the same as our's, then we had the greatest id and are the leader
+        else:
+            log.write("same, ")
+            leaderFound = 1
+            amLeader = 1
+            leader_id = myUUID
+            #Log our leader found flag
+            log.write(f"{amLeader}\n")
+            forward(clientSocket, leader_id, leaderFound)
+        if(leaderFound):
+            log.write(f"Leader is decided to:{leader_id}\n")
+
+#Print the leader to console
+print(f"Leader is {leader_id}")
